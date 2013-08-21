@@ -25,105 +25,112 @@ import org.slf4j.LoggerFactory;
  */
 @ThreadSafe
 public class HCDownloader implements Downloader {
-	private final Logger logger = LoggerFactory.getLogger(getClass());
-	
-	public static final String CONNECTION_TIMEOUT = "connectionTimeout";
-	public static final String READ_TIMEOUT = "readTimeout";
-	public static final String MAX_THREADS = "maxThreads";
-	public static final String CONTENT_LENGTH = "content-length";
-	
-	protected HttpClient httpclient;
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	private int connectionTimeout = 0;
-	private int readTimeout = 0;
-	private int maxThreads = -1;
-	
-	public HCDownloader() {
-		initHttpClient();
-	}
+    public static final String CONNECTION_TIMEOUT = "connectionTimeout";
+    public static final String READ_TIMEOUT = "readTimeout";
+    public static final String MAX_THREADS = "maxThreads";
+    public static final String CONTENT_LENGTH = "content-length";
 
-	public HCDownloader(Map<String,Object> params) {
-		if (params.containsKey(CONNECTION_TIMEOUT)) {
-			connectionTimeout = ((Integer) params.get(CONNECTION_TIMEOUT)).intValue();
-		}
-		
-		if (params.containsKey(READ_TIMEOUT)) {
-			readTimeout = ((Integer) params.get(READ_TIMEOUT)).intValue();
-		}
-		
-		if (params.containsKey(MAX_THREADS)) {
-			maxThreads = ((Integer) params.get(MAX_THREADS)).intValue();
-		}
-		
-		initHttpClient();
+    protected HttpClient httpclient;
+
+    private int connectionTimeout = 0;
+    private int readTimeout = 0;
+    private int maxThreads = -1;
+
+    public HCDownloader() {
+        initHttpClient();
     }
-	
-	private void initHttpClient() {
-		PoolingClientConnectionManager cm = new PoolingClientConnectionManager();
-		if(maxThreads != -1) {
-			cm.setMaxTotal(maxThreads);
-			cm.setDefaultMaxPerRoute(maxThreads);
-		}
-		
-		this.httpclient = new DefaultHttpClient(cm);
-	}
-	
-	/* (non-Javadoc)
-	 * @see org.esquivo.downloader.Downloader#download(java.net.URL)
-	 */
-	@Override
-	public File download(URL url) throws IOException {
-		return this.download(url, null);
-	}
 
+    public HCDownloader(Map<String, Object> params) {
+        if (params.containsKey(CONNECTION_TIMEOUT)) {
+            connectionTimeout = ((Integer) params.get(CONNECTION_TIMEOUT)).intValue();
+        }
 
-	@Override
+        if (params.containsKey(READ_TIMEOUT)) {
+            readTimeout = ((Integer) params.get(READ_TIMEOUT)).intValue();
+        }
+
+        if (params.containsKey(MAX_THREADS)) {
+            maxThreads = ((Integer) params.get(MAX_THREADS)).intValue();
+        }
+
+        initHttpClient();
+    }
+
+    private void initHttpClient() {
+        PoolingClientConnectionManager cm = new PoolingClientConnectionManager();
+        if (maxThreads != -1) {
+            cm.setMaxTotal(maxThreads);
+            cm.setDefaultMaxPerRoute(maxThreads);
+        }
+
+        this.httpclient = new DefaultHttpClient(cm);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.esquivo.downloader.Downloader#download(java.net.URL)
+     */
+    @Override
+    public File download(URL url) throws IOException {
+        return this.download(url, null);
+    }
+
+    @Override
     public File download(URL url, DownloaderCallback callback) throws IOException {
-		final HttpGet httpget = new HttpGet(url.toString());
+        final HttpGet httpget = new HttpGet(url.toString());
 
-		setTimeouts(httpget.getParams());
+        setTimeouts(httpget.getParams());
 
-		if (logger.isInfoEnabled()) {
-			logger.info("executing request " + httpget.getURI());
-		}
+        if (logger.isInfoEnabled()) {
+            logger.info("executing request " + httpget.getURI());
+        }
 
-		HttpResponse response = httpclient.execute(httpget);
+        HttpResponse response = httpclient.execute(httpget);
 
-		HttpEntity entity = response.getEntity();
-		
-		if (entity != null) {
-			final File tempFile = File.createTempFile("urldownloader-", null);
-			InputStream in;
-			
-			if (callback != null) {
-				long contentLength = -1;
-				if (response.getFirstHeader(CONTENT_LENGTH) != null) {
-					contentLength = Long.parseLong(response.getFirstHeader(CONTENT_LENGTH).getValue());
-				}
-				
-				// TODO : Review Stream leak
-				in = new DownloadCountingInputStream(entity.getContent(), callback, tempFile, contentLength);
-				callback.progress(tempFile, contentLength, 0);
-			} else {
-				in = entity.getContent();
-			}
-			
-			Utils.writeToFile(in, tempFile);
-			
-			return tempFile;
-		}
-		
-		return null;
-	}
+        HttpEntity entity = response.getEntity();
 
-	public void dispose() {
-		this.httpclient.getConnectionManager().shutdown();
-		logger.info("executing request ");
-	}
-	
-	private void setTimeouts(HttpParams params) {
-		HttpConnectionParams.setConnectionTimeout(params, connectionTimeout);
-		HttpConnectionParams.setSoTimeout(params, readTimeout);
-	}
+        if (entity != null) {
+            final File tempFile = File.createTempFile("urldownloader-", null);
+            InputStream in = null;
+
+            try {
+                if (callback != null) {
+                    long contentLength = -1;
+                    if (response.getFirstHeader(CONTENT_LENGTH) != null) {
+                        contentLength = Long.parseLong(response.getFirstHeader(CONTENT_LENGTH).getValue());
+                    }
+
+                    in = new DownloadCountingInputStream(entity.getContent(), callback, tempFile, contentLength);
+                    callback.progress(tempFile, contentLength, 0);
+                } else {
+                    in = entity.getContent();
+                }
+
+                Utils.writeToFile(in, tempFile);
+            } finally {
+                if (in != null) {
+                    in.close();
+                }
+            }
+
+            return tempFile;
+        }
+
+        return null;
+    }
+
+    @Override
+    public void dispose() {
+        this.httpclient.getConnectionManager().shutdown();
+        logger.info("executing request ");
+    }
+
+    private void setTimeouts(HttpParams params) {
+        HttpConnectionParams.setConnectionTimeout(params, connectionTimeout);
+        HttpConnectionParams.setSoTimeout(params, readTimeout);
+    }
 
 }
