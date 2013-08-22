@@ -3,12 +3,12 @@
  */
 package org.esquivo.downloader;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,18 +35,15 @@ public final class Utils {
 	}
 	
 	public static void writeToFile(InputStream in, File file) throws IOException {
-		BufferedInputStream bis = null;
-		BufferedOutputStream bos = null;
-
+	    OutputStream out = new FileOutputStream(file);
 		try {
 			if (LOG.isDebugEnabled()) {
 				LOG.info("Writing to file : " + file.getAbsolutePath());
 			}
 
-			IOUtils.copyLarge(in, new FileOutputStream(file), new byte[BUFFER_SIZE]);
+			IOUtils.copyLarge(in, out, new byte[BUFFER_SIZE]);
 		} finally {
-			IOUtils.closeQuietly(bis);
-			IOUtils.closeQuietly(bos);
+			IOUtils.closeQuietly(out);
 		}
 	}
 }
