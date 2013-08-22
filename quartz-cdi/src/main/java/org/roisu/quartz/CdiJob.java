@@ -30,7 +30,6 @@ public class CdiJob implements org.quartz.Job {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
-        // TODO : Add exception handling
         JobDataMap jobData = context.getJobDetail().getJobDataMap();
         String className = jobData.getString(JOB_CLASS_NAME);
         Class<? extends Runnable> jobClass;
