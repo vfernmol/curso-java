@@ -172,6 +172,12 @@
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-jaxrs</artifactId>
             <version>${resteasy.version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>javassist</artifactId>
+                    <groupId>javassist</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
@@ -218,57 +224,119 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>cobertura-maven-plugin</artifactId>
             </plugin>
-
-            <!-- NEW Maven Tomcat Plugin -->
-            <plugin>
-                <groupId>org.apache.tomcat.maven</groupId>
-                <artifactId>tomcat7-maven-plugin</artifactId>
-                <version>${tomcat7-maven-plugin.version}</version>
-                <configuration>
-                    <url>http://localhost:8080/manager/text</url>
-                    <server>tomcat-local</server>
-                    <username>admin</username>
-                    <password>admin</password>
-                    <path>/weather</path>
-                </configuration>
-            </plugin>
-
-            <!-- OLD Maven Tomcat Plugin -->
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>tomcat-maven-plugin</artifactId>
-                <version>${tomcat-maven-plugin.version}</version>
-                <configuration>
-                    <url>http://localhost:8080/manager/text</url>
-                    <server>tomcat-local</server>
-                    <path>/weather</path>
-                </configuration>
-            </plugin>
-
-            <!-- Jetty plugin -->
-            <plugin>
-                <groupId>org.mortbay.jetty</groupId>
-                <artifactId>jetty-maven-plugin</artifactId>
-                <version>${jetty-maven-plugin.version}</version>
-                <configuration>
-                    <scanIntervalSeconds>1</scanIntervalSeconds>
-                    <webApp>
-                        <contextPath>/weather</contextPath>
-                    </webApp>
-                    <contextXml>src/main/jetty/jetty-context.xml</contextXml>
-                    <httpConnector>
-                        <port>9090</port>
-                    </httpConnector>
-                    <connectors>
-                        <connector implementation="org.eclipse.jetty.server.nio.SelectChannelConnector">
-                            <port>9090</port>
-                            <maxIdleTime>60000</maxIdleTime>
-                        </connector>
-                    </connectors>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>jetty</id>
+            <activation>
+                <property>
+                    <name>appserver</name>
+                    <value>jetty</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <!-- Jetty plugin -->
+                    <plugin>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>jetty-maven-plugin</artifactId>
+                        <version>${jetty-maven-plugin.version}</version>
+                        <configuration>
+                            <scanIntervalSeconds>1</scanIntervalSeconds>
+                            <webApp>
+                                <contextPath>/weather</contextPath>
+                            </webApp>
+                            <contextXml>src/main/jetty/jetty-context.xml</contextXml>
+                            <httpConnector>
+                                <port>9090</port>
+                            </httpConnector>
+                            <connectors>
+                                <connector implementation="org.eclipse.jetty.server.nio.SelectChannelConnector">
+                                    <port>9090</port>
+                                    <maxIdleTime>60000</maxIdleTime>
+                                </connector>
+                            </connectors>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-war-plugin</artifactId>
+                        <configuration>
+
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>tomcat</id>
+            <activation>
+                <property>
+                    <name>appserver</name>
+                    <value>tomcat</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <!-- OLD Maven Tomcat Plugin -->
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>tomcat-maven-plugin</artifactId>
+                        <version>${tomcat-maven-plugin.version}</version>
+                        <configuration>
+                            <url>http://localhost:8080/manager/text</url>
+                            <server>tomcat-local</server>
+                            <path>/weather</path>
+                        </configuration>
+                    </plugin>
+                    <!-- NEW Maven Tomcat Plugin -->
+                    <plugin>
+                        <groupId>org.apache.tomcat.maven</groupId>
+                        <artifactId>tomcat7-maven-plugin</artifactId>
+                        <version>${tomcat7-maven-plugin.version}</version>
+                        <configuration>
+                            <url>http://localhost:8080/manager/text</url>
+                            <server>tomcat-local</server>
+                            <username>admin</username>
+                            <password>admin</password>
+                            <path>/weather</path>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+
+        <profile>
+            <id>development</id>
+            <build>
+                <resources>
+                    <resource>
+                        <directory>src/main/resources</directory>
+                    </resource>
+                    <resource>
+                        <directory>src/profiles/development</directory>
+                    </resource>
+                </resources>
+            </build>
+        </profile>
+
+        <profile>
+            <id>production</id>
+            <build>
+                <resources>
+                    <resource>
+                        <directory>src/main/resources</directory>
+                    </resource>
+                    <resource>
+                        <directory>src/profiles/production</directory>
+                    </resource>
+                </resources>
+            </build>
+        </profile>
+    </profiles>
 </project>
 
 
